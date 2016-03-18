@@ -16,3 +16,5 @@ Imports:
 LinkingTo: TMB, RcppEigen, Rcpp
 LazyData: TRUE
 RoxygenNote: 5.0.1
+URL: http://github.com/sofpj/mumm
+BugReports: http://github.com/sofpj/mumm/issues
