@@ -1,0 +1,18 @@
+Package: mumm
+Type: Package
+Title: Multiplicative Mixed Models using Template Model Builder
+Version: 0.1
+Date: 2016-03-02
+Authors@R: person("Sofie","Jensen", email = "sofp@dtu.dk", role = c("aut","cre"))
+Maintainer: Who to complain to <yourfault@somewhere.net>
+Description: More about what it does (maybe more than one line)
+License: What license is it under?
+Imports:
+    TMB,
+    Rcpp,
+    lme4,
+    Matrix,
+    stringr
+LinkingTo: TMB, RcppEigen, Rcpp
+LazyData: TRUE
+RoxygenNote: 5.0.1
