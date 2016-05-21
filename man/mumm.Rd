@@ -4,7 +4,7 @@
 \alias{mumm}
 \title{Fit Multiplicative Mixed Models with TMB}
 \usage{
-mumm(formula, data, report = TRUE)
+mumm(formula, data, report = FALSE)
 }
 \description{
 Fit a multiplicative mixed-effects model to data with use of the Template Model Builder.

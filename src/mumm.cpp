@@ -7,12 +7,13 @@ Type objective_function<Type>::operator() ()
   DATA_MATRIX(X);
   DATA_MATRIX(Xnu);
   DATA_SPARSE_MATRIX(Z);
-  DATA_MATRIX(rfac); /* måske DATA_MATRIX og så konverter til Integer når de skal bruges som index */
+  DATA_MATRIX(rfac);
   DATA_MATRIX(ffac);
   DATA_VECTOR(y);
   DATA_IVECTOR(npar); /* The number of levels in all of the random effects belonging to a */
   DATA_IVECTOR(nlevelsf); /* The number of levels in all of the fixed effects in the multiplicative terms (nu) */
   DATA_IVECTOR(nlevelsr); /* The number of levels in all of the random effects in the multiplicative terms* (b) */
+  DATA_IVECTOR(sizenu)
 
 
   using CppAD::Integer;
@@ -58,11 +59,15 @@ Type objective_function<Type>::operator() ()
 
   vector<Type> nuj(nlevelsf[0]);
   vector<Type> bj(nlevelsr[0]);
-  indx = 0;
+  int start = nlevelsf[0]-sizenu[0];
+
+  for (int i= 0; i<nuj.size(); i++) {   /*to overcome identifiability issues*/
+    nuj[i] = 0;
+  }
 
   /*Build nu for the j'th multiplicative term*/
-  for (int l = 0; l<nlevelsf[0]; l++) {
-    indx = l+jumpf;
+  for (int l = start; l<nlevelsf[0]; l++) {
+    indx = l-start+jumpf;
     nuj[l] = nu[indx];
   }
 
@@ -81,7 +86,7 @@ Type objective_function<Type>::operator() ()
     mult[i] += bj[Integer(rfac(i,0))-1]*nu2[Integer(ffac(i,0))-1];
 
   }
-  jumpf += nlevelsf[0];
+  jumpf += sizenu[0];
   jumpr += nlevelsr[0];
 
 
@@ -91,13 +96,18 @@ Type objective_function<Type>::operator() ()
     vector<Type> nuj(nlevelsf[j]);
     vector<Type> bj(nlevelsr[j]);
     indx = 0;
+    int start = nlevelsf[j]-sizenu[j];
+
+    for (int i= 0; i<nuj.size(); i++) {   /*to overcome identifiability issues*/
+      nuj[i] = 0;
+    }
 
     /*Build nu for the j'th multiplicative term*/
-    nuj[0] = 0;   /*to overcome identifiability issues*/
-    for (int l = 1; l<nlevelsf[j]; l++) {
-      indx = l+jumpf-1;
+    for (int l = start; l<nlevelsf[j]; l++) {
+      indx = l-start+jumpf;
       nuj[l] = nu[indx];
     }
+
 
     indx = 0;
     /*Build b for the j'th multiplicative term*/
@@ -114,7 +124,7 @@ Type objective_function<Type>::operator() ()
       mult[i] += bj[Integer(rfac(i,j))-1]*nu2[Integer(ffac(i,j))-1];
 
     }
-    jumpf += nlevelsf[j];
+    jumpf += sizenu[j];
     jumpr += nlevelsr[j];
   }
 
