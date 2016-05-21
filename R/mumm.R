@@ -223,5 +223,6 @@ mumm <- function(formula, data, report = FALSE) {
 
   class(res) <- "mumm"
   return(res)
+}
 
 

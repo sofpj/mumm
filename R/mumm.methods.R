@@ -2,7 +2,7 @@
 #' @export
 print.mumm <- function(fit) {
 
-  cat("Multiplicative mixel model fit by ML \n Formula:", deparse(fit$call$formula),
+  cat("Multiplicative mixel model fit by ML \n Formula:", deparse(fit$call$formula,width.cutoff = 500),
       "\n Data:", fit$call$data, "\n")
 
   cat("Log-likelihood at convergence:", -fit$objective, "\n")
