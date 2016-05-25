@@ -2,8 +2,15 @@
 #' @export
 print.mumm <- function(fit) {
 
-  cat("Multiplicative mixel model fit by ML \n Formula:", deparse(fit$call$formula,width.cutoff = 500),
-      "\n Data:", fit$call$data, "\n")
+  cat("Multiplicative mixel model fit by ML \n Formula:")
+
+  for(i in 1:length(deparse(fit$call$formula))) {
+    if(i>1){cat("      ")}
+    cat(deparse(fit$call$formula)[i],"\n")
+  }
+
+
+  cat("Data:", fit$call$data, "\n")
 
   cat("Log-likelihood at convergence:", -fit$objective, "\n")
 
@@ -70,8 +77,20 @@ lrt <- function(fit1,fit2) UseMethod("lrt")
 lrt.mumm <- function(fit1, fit2) {
 
   cat("Data:", fit1$call$data, "\n")
-  cat("Models: \n Object:", deparse(fit1$call$formula),
-      "\n ...1:", deparse(fit2$call$formula), "\n" )
+  cat("Models: \n Object:")
+
+  for(i in 1:length(deparse(fit1$call$formula))) {
+    if(i>1){cat("    ")}
+    cat(deparse(fit1$call$formula)[i],"\n")
+  }
+
+
+  cat("...1   :")
+
+  for(i in 1:length(deparse(fit2$call$formula))) {
+    if(i>1){cat("    ")}
+    cat(deparse(fit2$call$formula)[i],"\n")
+  }
 
   #table
   loglik1 = -fit1$objective
@@ -86,3 +105,4 @@ lrt.mumm <- function(fit1, fit2) {
 
 
 }
+
