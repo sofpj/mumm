@@ -87,18 +87,44 @@ lrt.mumm <- function(fit1, fit2) {
 
   cat("...1   :")
 
-  for(i in 1:length(deparse(fit2$call$formula))) {
-    if(i>1){cat("    ")}
-    cat(deparse(fit2$call$formula)[i],"\n")
+  if(class(fit2)=="mumm") {
+
+    loglik2 = -fit2$objective
+    df2 = fit2$df
+
+    for(i in 1:length(deparse(fit2$call$formula))) {
+      if(i>1){cat("    ")}
+      cat(deparse(fit2$call$formula)[i],"\n")
+    }
+  } else {
+    loglikelihood = logLik(fit2, REML = F)
+    loglik2 = loglikelihood[1]
+    df2 = attr(loglikelihood,"df")
+
+    if(class(fit2)=="lm"){
+
+      for(i in 1:length(deparse(fit2$call$formula))) {
+        if(i>1){cat("    ")}
+        cat(deparse(fit2$call$formula)[i],"\n")
+      }
+
+    } else {
+
+      for(i in 1:length(deparse(fit2@call$formula))) {
+        if(i>1){cat("    ")}
+        cat(deparse( fit2@call$formula)[i],"\n")
+      }
+    }
+
   }
 
   #table
   loglik1 = -fit1$objective
-  loglik2 = -fit2$objective
-  df = fit1$df-fit2$df
+  df1 = fit1$df
+  df = df1-df2
   chi = 2*(loglik1-loglik2)
   pvalue = 1-pchisq(chi,df  = df)
-  table_sd = data.frame(Df = c(fit1$df,fit2$df), logLik = c(loglik1,loglik2), Chisq = c(NA,chi),
+  table_sd = data.frame(Df = c(df1,df2), logLik = c(loglik1,loglik2), Chisq = c(NA,chi),
                         ChiDf = c(NA,df), pvalue = c(NA,pvalue))
   row.names(table_sd) <- c("Object","..1")
   print(as.matrix(table_sd), right = FALSE, digits = 4, na.print = "")
