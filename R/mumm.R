@@ -2,13 +2,34 @@
 #'
 #' Fit a multiplicative mixed-effects model to data with use of the Template Model Builder.
 #'
+#' @param formula a two-sided formula object describing the linear fixed-effects and random-effects part
+#' together with the multiplicative part. The respons is on the left of a ~ operator and the terms which are
+#' separated by + operators are on the right. The random-effect terms are recognized by vertical bars "|",
+#' separating an expression for a model matrix and a grouping factor. The syntax for the multiplicative terms
+#' is 'mp("random effect","fixed effect")'.
+#'
+#' @param data a data frame containing the variables in the formula.
+#'
+#' @details Fit a multiplicative mixed model via maximum likelihood with use of the Template Model Builder.
+#' A multiplicative mixed model is here considered as a model with a linear mixed model part and one or more
+#' multiplicative terms. A multiplicative term is here defined as a product of a random effect and a fixed effect,
+#' i.e. a term that models a part of the interaction as a random coefficient model based on linear regression
+#' on the fixed effect.
+#'
+#' @return An object of class mumm.
+#'
+#' @examples
+#' library(SensMixed)
+#' fit = mumm(Colourbalance ~ 1 + Picture + (1|Assessor) + (1|Assessor:Picture) +
+#'            mp(Assessor,Picture) ,data = TVbo)
+#'
 #' @useDynLib mumm
 #' @importFrom lme4 subbars findbars mkReTrms nobars
 #' @importFrom TMB MakeADFun sdreport tmbprofile
 #' @importFrom Rcpp sourceCpp
 #' @importFrom Matrix t
 #' @export
-mumm <- function(formula, data, report = FALSE) {
+mumm <- function(formula, data) {
 
   #Checiking input:
 
@@ -219,7 +240,8 @@ mumm <- function(formula, data, report = FALSE) {
   res = list(par = opt$par, objective = opt$objective, convergence = opt$convergence,
              iterations = opt$iterations, evaluations = opt$evaluations, convmessage = opt$message,
              par_fix = par_fix, sigmas = sigmas , par_rand = par_rand, nlevels_par_rand =  nlevels_par_rand,
-             call = match.call(), nobs = nrow(data), df = length(opt$par), sdreport = sdr, obj = obj)
+             call = match.call(), nobs = nrow(data), df = length(opt$par), sdreport = sdr, obj = obj,
+             index_num = NUMind1, data = data)
 
   class(res) <- "mumm"
   return(res)
