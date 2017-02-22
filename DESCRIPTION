@@ -3,8 +3,10 @@ Type: Package
 Title: Multiplicative Mixed Models using Template Model Builder
 Version: 0.1
 Date: 2016-03-02
-Authors@R: person("Sofie Pødenphant","Jensen", email = "sofp@dtu.dk", role = c("aut","cre"))
-Maintainer: Sofie Pødenphant Jensen <sofp@dtu.dk>
+Authors@R: c(
+  person("Sofie Poedenphant","Jensen", email = "sofp@dtu.dk", role = c("aut","cre")),
+  person("Per Bruun Brockhoff", role = c("aut")))
+Maintainer: Sofie Poedenphant Jensen <sofp@dtu.dk>
 Description: Fit multiplicative mixed models using maximum likelihood estimation via the Template
   Model Builder (TMB). The package provides functions for calculating confidence intervals for the
   model parameters and for performing likelihood ratio tests.
