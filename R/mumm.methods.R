@@ -1,4 +1,3 @@
-
 #' @export
 print.mumm <- function(fit) {
 
@@ -19,6 +18,8 @@ print.mumm <- function(fit) {
   table_sd = data.frame(Groups = names(fit$sigmas), Std.Dev. = fit$sigmas)
   print(table_sd, right = FALSE, row.names = FALSE)
 
+  cat("Correlation:", fit$est_cor, "\n")
+
   cat("Number of obs:", fit$nobs, "\n")
 
   cat("Fixed Effects: \n")
@@ -26,6 +27,47 @@ print.mumm <- function(fit) {
 
 }
 
+#' Extract Random Effects
+#'
+#' A function to extract the estimated random effects from a model object of class mumm.
+#'
+#' @usage ## S3 method for class mumm
+#' ranef(fit)
+#'
+#' @param fit an object of class mumm
+#'
+#' @return A named list with the estimated random effects, where each element in the list is
+#' a numeric vector consisting of the estimated random effect coefficients for a random factor in the model.
+#'
+#' @examples
+#' set.seed(100)
+#' sigma_e <- 1.5
+#' sigma_a <- 0.8
+#' sigma_b <- 0.5
+#' sigma_d <- 0.7
+#' nu <- c(8.2, 6.2, 2.3, 10.4, 7.5, 1.9)
+#'
+#' nA <- 15
+#' nP <- 6
+#' nR <- 5
+#'
+#' a <- rnorm(nA, mean = 0, sd = sigma_a)
+#' b <- rnorm(nA, mean = 0, sd = sigma_b)
+#' d <- rnorm(nA*nP, mean = 0, sd = sigma_d)
+#' e <- rnorm(nA*nP*nR, mean = 0, sd = sigma_e)
+#'
+#' Assessor <- factor(rep(seq(1,nA),each = (nP*nR)))
+#' Product <- factor(rep(rep(seq(1,nP),each = nR), nA))
+#' AssessorProduct <- (Assessor:Product)
+#'
+#' y <- nu[Product] + a[Assessor] + b[Assessor]*(nu[Product]-mean(nu)) + d[AssessorProduct] + e
+#'
+#' sim_data <- data.frame(y, Assessor, Product)
+#'
+#' fit <- mumm(y ~ 1 + Product + (1|Assessor) + (1|Assessor:Product) +
+#'              mp(Assessor,Product) ,data = sim_data)
+#'
+#' ranef(fit)
 #' @export
 ranef <- function(fit) UseMethod("ranef")
 
@@ -47,29 +89,135 @@ ranef.mumm <- function(fit) {
 
 }
 
+#' Confidence Intervals for Model Parameters
+#'
+#' Computes confidence intervals for the fixed effect parameters and the variance components
+#' in a fitted multiplicative mixed model.
+#'
+#' @usage ## S3 method for class mumm
+#' confint(fit, parm = "all", level = 0.95)
+#'
+#' @param fit an object of class mumm.
+#'
+#' @param parm a vector of names specifying which parameters to compute confidence intervals for. If missing,
+#' confidence intervals will be computed for all of the fixed effect paramters and all of the variance components.
+#'
+#' @param level the confidence level.
+#'
+#' @details The confidence intervals are computed by the profile likelihood method.
+#'
+#' @return A matrix with the first column showing the lower confidence limit and the second column showing the
+#' upper limit for each parameter.
+#'
+#' @examples
+#' set.seed(100)
+#' sigma_e <- 1.5
+#' sigma_a <- 0.8
+#' sigma_b <- 0.5
+#' sigma_d <- 0.7
+#' nu <- c(8.2, 6.2, 2.3, 10.4, 7.5, 1.9)
+#'
+#' nA <- 15
+#' nP <- 6
+#' nR <- 5
+#'
+#' a <- rnorm(nA, mean = 0, sd = sigma_a)
+#' b <- rnorm(nA, mean = 0, sd = sigma_b)
+#' d <- rnorm(nA*nP, mean = 0, sd = sigma_d)
+#' e <- rnorm(nA*nP*nR, mean = 0, sd = sigma_e)
+#'
+#' Assessor <- factor(rep(seq(1,nA),each = (nP*nR)))
+#' Product <- factor(rep(rep(seq(1,nP),each = nR), nA))
+#' AssessorProduct <- (Assessor:Product)
+#'
+#' y <- nu[Product] + a[Assessor] + b[Assessor]*(nu[Product]-mean(nu)) + d[AssessorProduct] + e
+#'
+#' sim_data <- data.frame(y, Assessor, Product)
+#'
+#' fit <- mumm(y ~ 1 + Product + (1|Assessor) + (1|Assessor:Product) +
+#'              mp(Assessor,Product) ,data = sim_data)
+#'
+#' confint(fit)
+#' confint(fit, parm = c('Product3', 'Assessor', 'mp Assessor:Product'), level = 0.90)
+#'
 #' @export
-confint.mumm <- function(fit, names = "all", level = 0.95){
+confint.mumm <- function(fit, parm = "all", level = 0.95){
 
   name_vector = c(names(fit$par_fix),names(fit$sigmas))
 
-  if(names[1] == "all"){
+  if(parm[1] == "all"){
     index = 1:length(name_vector)
   } else {
-    index = match(names,name_vector)
+    index = match(parm,name_vector)
+    name_vector <- name_vector[index]
   }
 
   confints = c()
 
+  n_parfix = length(fit$par_fix)
+
   for(i in 1:length(index)){
     profile = tmbprofile(fit$obj, index[i] , trace = FALSE)
     c = confint(profile, level = level)
-    dimnames(c)[[1]] = names[i]
-    confints = rbind(confints,c)
+    dimnames(c)[[1]] = parm[i]
+
+    #If parameter is a variance component
+    if(index[i]>n_parfix){
+      confints = rbind(confints,exp(c))
+    }
+    else{
+      confints = rbind(confints,c)
+    }
 
   }
+  dimnames(confints)[[1]] <- name_vector
   print.default(confints)
 }
 
+#' Likelihood Ratio Test
+#'
+#' A function to perform the likelihood ratio test for testing two nested models against each other.
+#'
+#' @param fit1 a fitted model object of class mumm.
+#'
+#' @param fit2 a fitted model object of class mumm or a model object returned by \code{lm} or \code{lmer}.
+#'
+#' @details Performs the likelihood ratio test for testing two nested models against each other. The model in
+#' \code{fit2} should be nested within the model in \code{fit1}.
+#'
+#' @return A matrix with the likelihood ratio test statistic and the corresponding p-value.
+#'
+#' @examples
+#' set.seed(100)
+#' sigma_e <- 1.5
+#' sigma_a <- 0.8
+#' sigma_b <- 0.5
+#' sigma_d <- 0.7
+#' nu <- c(8.2, 6.2, 2.3, 10.4, 7.5, 1.9)
+#'
+#' nA <- 15
+#' nP <- 6
+#' nR <- 5
+#'
+#' a <- rnorm(nA, mean = 0, sd = sigma_a)
+#' b <- rnorm(nA, mean = 0, sd = sigma_b)
+#' d <- rnorm(nA*nP, mean = 0, sd = sigma_d)
+#' e <- rnorm(nA*nP*nR, mean = 0, sd = sigma_e)
+#'
+#' Assessor <- factor(rep(seq(1,nA),each = (nP*nR)))
+#' Product <- factor(rep(rep(seq(1,nP),each = nR), nA))
+#' AssessorProduct <- (Assessor:Product)
+#'
+#' y <- nu[Product] + a[Assessor] + b[Assessor]*(nu[Product]-mean(nu)) + d[AssessorProduct] + e
+#'
+#' sim_data <- data.frame(y, Assessor, Product)
+#'
+#' fit <- mumm(y ~ 1 + Product + (1|Assessor) + (1|Assessor:Product) +
+#'              mp(Assessor,Product) ,data = sim_data)
+#'
+#' fit2 <- mumm(y ~ 1 + Product + (1|Assessor) + mp(Assessor,Product) ,data = sim_data)
+#' lrt(fit,fit2)
+#'
 #' @export
 lrt <- function(fit1,fit2) UseMethod("lrt")
 
