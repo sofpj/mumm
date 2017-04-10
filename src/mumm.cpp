@@ -13,7 +13,9 @@ Type objective_function<Type>::operator() ()
   DATA_IVECTOR(npar); /* The number of levels in all of the random effects belonging to a */
   DATA_IVECTOR(nlevelsf); /* The number of levels in all of the fixed effects in the multiplicative terms (nu) */
   DATA_IVECTOR(nlevelsr); /* The number of levels in all of the random effects in the multiplicative terms* (b) */
-  DATA_IVECTOR(sizenu)
+  DATA_IVECTOR(sizenu);
+  DATA_IVECTOR(indexIna); /* The index for the part of a that is correlated with b */
+  DATA_SCALAR(indexInSiga);  /* The index in sigma_a for the part of a that is correlated with b */
 
 
   using CppAD::Integer;
@@ -25,19 +27,21 @@ Type objective_function<Type>::operator() ()
   PARAMETER_VECTOR(nu);
 
   PARAMETER_VECTOR(log_sigma_a);
-  PARAMETER_VECTOR(log_sigma_b);
+  PARAMETER(log_sigma_b);
   PARAMETER(log_sigma);
+  PARAMETER(transf_rho);
 
   Type sigma = exp(log_sigma);
   vector<Type> sigma_a = exp(log_sigma_a);
-  vector<Type> sigma_b = exp(log_sigma_b);
+  Type sigma_b = exp(log_sigma_b);
+  Type rho = transf_rho / sqrt(1. + transf_rho*transf_rho);
 
 
   /* Including the estimates and standard errors on natural scale */
   ADREPORT(sigma);
   ADREPORT(sigma_a);
   ADREPORT(sigma_b);
-
+  ADREPORT(rho);
 
   Type nll = 0;
   int nobs = y.size();
@@ -143,31 +147,80 @@ Type objective_function<Type>::operator() ()
   int index_count = 0;
   int index = 0;
 
-  /* Going through all of the random effects in a */
-  for(int i=0; i<sigma_a.size(); i++){
 
-    for(int j=0; j<npar[i]; j++){
-      index = j+index_count;
-      nll -= dnorm(a[index], Type(0), sigma_a[i], true);
+
+  vector<Type> acor (indexIna[1]-indexIna[0]+1);
+  vector<Type> anotcor (a.size()-acor.size());
+  matrix<Type> Sigma(2,2);
+
+
+  //if no part of a is related to b
+  if (indexInSiga == 0) {
+
+    anotcor = a;
+    index_count = 0;
+
+    /* Going through all of the random effects in b */
+     //for(int i=0; i<sigma_b.size(); i++){
+
+     for(int j=0; j<nlevelsr[0]; j++){
+     index = j+index_count;
+     nll -= dnorm(b[index], Type(0), sigma_b, true);
+     }
+
+
+     //index_count += nlevelsr[i];
+     //}
+
+
+  }
+  else {
+
+    //Making a subvector of a, with the elements that are correlated with b
+
+    for (unsigned i=0; i<acor.size(); i++){
+      acor[i]=a[indexIna[0]-1+i];
+    }
+    //Making a subvector of a, with the elements that are NOT correlated with b
+
+    for (unsigned i=0; i<(indexIna[0]-1); i++){
+      anotcor[i]=a[i];
+    }
+    for (unsigned i=indexIna[1]; i<a.size(); i++){
+      anotcor[i-indexIna[1]+indexIna[0]-1]=a[i];
     }
 
-    index_count += npar[i];
-  }
 
+    Sigma(0,0)=(sigma_a[Integer(indexInSiga)-1])*(sigma_a[Integer(indexInSiga)-1]);
+    Sigma(1,1)=sigma_b*sigma_b;
+    Sigma(0,1)=rho*sigma_a[Integer(indexInSiga)-1]*sigma_b;
+    Sigma(1,0)=Sigma(0,1);
+
+
+  }
 
   index_count = 0;
 
-  /* Going through all of the random effects in b */
-  for(int i=0; i<sigma_b.size(); i++){
+  /* Going through all of the random effects in a */
+  for(int i=0; i<sigma_a.size(); i++){
 
-    for(int j=0; j<nlevelsr[i]; j++){
-      index = j+index_count;
-      nll -= dnorm(b[index], Type(0), sigma_b[i], true);
+    if (i == (indexInSiga-1)) {
+      for(int k=0; k<acor.size(); k++) {
+        vector<Type> ab(2); ab(0)=acor(k); ab(1)=b(k);
+        nll += density::MVNORM(Sigma)(ab);
+      }
     }
-
-
-    index_count += nlevelsr[i];
+    else {
+      for(int j=0; j<npar[i]; j++){
+        index = j+index_count;
+        nll -= dnorm(anotcor[index], Type(0), sigma_a[i], true);
+      }
+      index_count += npar[i];
+    }
   }
+
+
+
 
   return nll;
 }
