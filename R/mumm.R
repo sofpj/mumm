@@ -19,9 +19,33 @@
 #' @return An object of class mumm.
 #'
 #' @examples
-#' library(SensMixed)
-#' fit = mumm(Colourbalance ~ 1 + Picture + (1|Assessor) + (1|Assessor:Picture) +
-#'            mp(Assessor,Picture) ,data = TVbo)
+#' set.seed(100)
+#' sigma_e <- 1.5
+#' sigma_a <- 0.8
+#' sigma_b <- 0.5
+#' sigma_d <- 0.7
+#' nu <- c(8.2, 6.2, 2.3, 10.4, 7.5, 1.9)
+
+#' nA <- 15
+#' nP <- 6
+#' nR <- 5
+
+#' a <- rnorm(nA, mean = 0, sd = sigma_a)
+#' b <- rnorm(nA, mean = 0, sd = sigma_b)
+#' d <- rnorm(nA*nP, mean = 0, sd = sigma_d)
+#' e <- rnorm(nA*nP*nR, mean = 0, sd = sigma_e)
+
+#' Assessor <- factor(rep(seq(1,nA),each = (nP*nR)))
+#' Product <- factor(rep(rep(seq(1,nP),each = nR), nA))
+#' AssessorProduct <- (Assessor:Product)
+
+#' y <- nu[Product] + a[Assessor] + b[Assessor]*(nu[Product]-mean(nu)) + d[AssessorProduct] + e
+
+#' sim_data <- data.frame(y, Assessor, Product)
+
+#' fit <- mumm(y ~ 1 + Product + (1|Assessor) + (1|Assessor:Product) +
+#'              mp(Assessor,Product) ,data = sim_data)
+
 #'
 #' @useDynLib mumm
 #' @importFrom lme4 subbars findbars mkReTrms nobars
@@ -29,7 +53,7 @@
 #' @importFrom Rcpp sourceCpp
 #' @importFrom Matrix t
 #' @export
-mumm <- function(formula, data) {
+mumm <- function(formula, data, cor = TRUE) {
 
   #Checiking input:
 
@@ -149,6 +173,19 @@ mumm <- function(formula, data) {
   #number of random effects in the model (excluding random regression coef.)
   n_rand = length(rterms$cnms)
 
+  #finding the index of the random effects that is related to the regression coef
+  #(due to the correlation)
+  TFindex = attr(npar,"names") == randomef
+  NUMindex = which(TFindex)
+  npar_cumsum = c(0,cumsum(npar))
+  indexIna = c(npar_cumsum[NUMindex]+1,npar_cumsum[NUMindex+1])
+
+  if (length(NUMindex) == 0){
+    NUMindex = 0
+    indexIna = c(1,0)
+    cor = FALSE
+  }
+
   data_named = data
 
   colnames(data_named)[colnames(data)==formula[[2]]] <- "y"
@@ -173,7 +210,8 @@ mumm <- function(formula, data) {
   rfac = matrix(rfac,dimnames = NULL, ncol = length(randomef))
 
   dataTMB = list(y = data_named[['y']],ffac = ffac, rfac = rfac,
-                 X = X, Z = Z, Xnu = Xnu,  npar = npar, nlevelsf = nlevelsf, nlevelsr = nlevelsr, sizenu = sizenu)
+                 X = X, Z = Z, Xnu = Xnu,  npar = npar, nlevelsf = nlevelsf, nlevelsr = nlevelsr, sizenu = sizenu,
+                 indexIna = indexIna, indexInSiga = NUMindex)
 
 
   parameters = list(
@@ -183,19 +221,35 @@ mumm <- function(formula, data) {
     nu  = rep(0,ncol(Xnu)),
     log_sigma_a     = rep(0,n_rand),
     log_sigma_b     = rep(0,n_mult),
-    log_sigma       = 0
+    log_sigma       = 0,
+    transf_rho      = 0
   )
 
 
-  obj <- MakeADFun(
-    data=dataTMB,
-    parameters= parameters,
-    random = c("a","b"),
-    DLL    = "mumm",
-    silent = TRUE
-  )
+  if(cor == TRUE){
 
-  opt = nlminb(obj$par,obj$fn,obj$gr);
+    obj <- MakeADFun(
+      data=dataTMB,
+      parameters= parameters,
+      random = c("a","b"),
+      DLL    = "mumm",
+      silent = TRUE
+    )
+  }else{
+
+    obj <- MakeADFun(
+      data=dataTMB,
+      parameters= parameters,
+      random = c("a","b"),
+      DLL    = "mumm",
+      silent = TRUE,
+      map=list(transf_rho=factor(NA)) #fixerer korrelationen til 0
+    )
+  }
+
+
+
+  opt = nlminb(obj$par,obj$fn,obj$gr, control =list(iter.max = 5000, eval.max = 5000));
 
   sdr = sdreport(obj)
 
@@ -203,17 +257,17 @@ mumm <- function(formula, data) {
   #---------------------------- Finalizing output ---------------------------------------
 
   ## The estimated fixed effect coefficients
-  par_fix = opt$par[1:(length(opt$par)-(n_rand+n_mult+1))]
+  par_fix = opt$par[1:(length(opt$par)-(n_rand+n_mult+1+cor))]
 
 
   names_fixed_ef = c(colnames(X),colnames(Xnu))
 
   names(par_fix) = names_fixed_ef
 
-
+  est_cor = opt$par['transf_rho']/ sqrt(1. + opt$par['transf_rho']^2);
 
   ##The estimated variance components
-  sigmas = exp(opt$par[(length(opt$par)-(n_rand+n_mult)):length(opt$par)])
+  sigmas = exp(opt$par[(length(opt$par)-(n_rand+n_mult+(cor==TRUE))):(length(opt$par)-(cor==TRUE))])
 
   ##Creating a vector with names for the variance components
   names_random_ef = c(names(rterms$flist),paste0("mp ",randomef,":",fixedef),"Residual")
@@ -236,10 +290,9 @@ mumm <- function(formula, data) {
   nlevels_par_rand = c(sapply(rterms$flist,nlevels),sapply(mp_rdata,nlevels))
 
 
-
   res = list(par = opt$par, objective = opt$objective, convergence = opt$convergence,
              iterations = opt$iterations, evaluations = opt$evaluations, convmessage = opt$message,
-             par_fix = par_fix, sigmas = sigmas , par_rand = par_rand, nlevels_par_rand =  nlevels_par_rand,
+             par_fix = par_fix, sigmas = sigmas, est_cor = est_cor , par_rand = par_rand, nlevels_par_rand =  nlevels_par_rand,
              call = match.call(), nobs = nrow(data), df = length(opt$par), sdreport = sdr, obj = obj,
              index_num = NUMind1, data = data)
 
