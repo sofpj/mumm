@@ -53,7 +53,7 @@
 #' @importFrom Rcpp sourceCpp
 #' @importFrom Matrix t
 #' @export
-mumm <- function(formula, data, cor = TRUE) {
+mumm <- function(formula, data, cor = TRUE, start = c()) {
 
   #Checiking input:
 
@@ -187,16 +187,26 @@ mumm <- function(formula, data, cor = TRUE) {
                  X = X, Z = Z, Xnu = Xnu,  npar = npar, nlevelsf = nlevelsf, nlevelsr = nlevelsr, sizenu = sizenu,
                  indexIna = indexIna, indexInSiga = NUMindex)
 
+  par_ix = c(ncol(dataTMB$X),ncol(Xnu),n_rand,n_mult,1,1)
+  par_cix = cumsum(par_ix)
+
+
+  if(length(start)==0){
+    start = rep(0,par_cix[length(par_cix)])
+  }
+
+  TF_beta = as.logical(par_cix[1])
+  TF_sigma_a = (par_cix[2]+1)<=par_cix[3]
 
   parameters = list(
-    beta  = rep(0,ncol(dataTMB$X)),
+    beta  =  start[(0+as.logical(par_cix[1])):par_cix[1]],
     a = rep(0,ncol(dataTMB$Z)),
     b  = rep(0,sum(nlevelsr)),
-    nu  = rep(0,ncol(Xnu)),
-    log_sigma_a     = rep(1,n_rand),
-    log_sigma_b     = rep(0,n_mult),
-    log_sigma       = 0,
-    transf_rho      = 0
+    nu  = start[(par_cix[1]+1):par_cix[2]],
+    log_sigma_a     = start[((par_cix[2]+1)*TF_sigma_a):(par_cix[3]*TF_sigma_a)],
+    log_sigma_b     = start[(par_cix[3]+1):par_cix[4]],
+    log_sigma       = start[length(start)-1],
+    transf_rho      = start[length(start)]
   )
 
 
