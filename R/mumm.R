@@ -75,7 +75,7 @@ mumm <- function(formula, data, cor = TRUE) {
   NUMind2 = NUMind[!TFind] #index for fixed terms
 
   terms_fix = drop.terms(terms(fixedform),NUMind1,keep.response = TRUE)
-  formula_fix = formula(terms_fix)
+  #formula_fix = formula(terms_fix)
   terms_mult = drop.terms(terms(fixedform),NUMind2,keep.response = TRUE)
   formula_mult = formula(terms_mult)
 
@@ -114,46 +114,20 @@ mumm <- function(formula, data, cor = TRUE) {
 
   #------------Building fixed effect design matrices, X and Xnu -------------------
 
-  #If all of the fixed effects are part of the multiplicative terms
-  if (length(NUMremove2) == 0) {
+  Xbig = model.matrix(terms_fix,data = data)
 
-    terms_fix_ed = NULL  #fixed effects that are not part of the multiplicative terms
-    X = matrix(1, nrow = nrow(data), ncol = 1) #intercept
-    colnames(X) = "(Intercept)"
-    Xnu = model.matrix(terms_fix,data = data)
-    t = as.data.frame(table(attr(Xnu,"assign")))
-    Xnu = Xnu[,-1]    #Removing the intercept
-    sizenu = t[t[["Var1"]]%in%NUMremove1,]$Freq
+  Xindex = as.logical(attr(Xbig,"assign")%in%NUMremove2 + (attr(Xbig,"assign")==0))
+  X = Xbig[,Xindex, drop= F]
+  Xnu = Xbig[,!Xindex, drop = F]
 
-  } else {
+  t = as.data.frame(table(attr(Xbig,"assign")))
 
-    #fixed effects that are not part of the multiplicative terms
-    #terms_fix_ed = drop.terms(terms_fix,NUMremove1,keep.response = TRUE)
-    #formula_fix_ed = formula(terms_fix_ed)
-    #X = model.matrix(formula_fix_ed,data = data) #with intercept
-
-    terms_fixInMult = drop.terms(terms_fix,NUMremove2,keep.response = TRUE)
-    formula_fixInMult = formula(terms_fixInMult)
-
-    #Xnu = model.matrix(terms_fixInMult,data = data)
-    #Xnu = Xnu[,-1]    #Removing the intercept
-
-    Xbig = model.matrix(terms_fix,data = data)
-
-    X = Xbig[,1, drop = F]
-    Xindex = as.logical(attr(Xbig,"assign")%in%NUMremove2 + (attr(Xbig,"assign")==0))
-    X = Xbig[,Xindex, drop= F]
-    Xnu = Xbig[,!Xindex, drop = F]
-
-    t = as.data.frame(table(attr(Xbig,"assign")))
-
-    #The number of parameters to be estimated for each fixed effect in the multiplicative term
-    sizenu = t[t[["Var1"]]%in%NUMremove1,]$Freq
-
-  }
+  #The number of parameters to be estimated for each fixed effect in the multiplicative term
+  sizenu = t[t[["Var1"]]%in%NUMremove1,]$Freq
 
 
-  #Building random effect design matrix, Z
+
+  #--------------- Building random effect design matrix, Z ----------------------------
   randform <- formula
 
   if (is.null(findbars(randform[[3]]))) {
@@ -219,7 +193,7 @@ mumm <- function(formula, data, cor = TRUE) {
     a = rep(0,ncol(dataTMB$Z)),
     b  = rep(0,sum(nlevelsr)),
     nu  = rep(0,ncol(Xnu)),
-    log_sigma_a     = rep(0,n_rand),
+    log_sigma_a     = rep(1,n_rand),
     log_sigma_b     = rep(0,n_mult),
     log_sigma       = 0,
     transf_rho      = 0
@@ -265,6 +239,7 @@ mumm <- function(formula, data, cor = TRUE) {
   names(par_fix) = names_fixed_ef
 
   est_cor = opt$par['transf_rho']/ sqrt(1. + opt$par['transf_rho']^2);
+  names(est_cor) = "Correlation"
 
   ##The estimated variance components
   sigmas = exp(opt$par[(length(opt$par)-(n_rand+n_mult+(cor==TRUE))):(length(opt$par)-(cor==TRUE))])
@@ -272,7 +247,6 @@ mumm <- function(formula, data, cor = TRUE) {
   ##Creating a vector with names for the variance components
   names_random_ef = c(names(rterms$flist),paste0("mp ",randomef,":",fixedef),"Residual")
   names(sigmas) = names_random_ef
-
 
   ##Random effects
   par_rand = sdr$par.random
