@@ -143,34 +143,74 @@ ranef.mumm <- function(fit) {
 #' @export
 confint.mumm <- function(fit, parm = "all", level = 0.95){
 
-  name_vector = c(names(fit$par_fix),names(fit$sigmas))
-
-  if(parm[1] == "all"){
-    index = 1:length(name_vector)
-  } else {
-    index = match(parm,name_vector)
-    name_vector <- name_vector[index]
-  }
-
   confints = c()
-
   n_parfix = length(fit$par_fix)
 
-  for(i in 1:length(index)){
-    profile = tmbprofile(fit$obj, index[i] , trace = FALSE)
-    c = confint(profile, level = level)
-    dimnames(c)[[1]] = parm[i]
-
-    #If parameter is a variance component
-    if(index[i]>n_parfix){
-      confints = rbind(confints,exp(c))
-    }
-    else{
-      confints = rbind(confints,c)
-    }
-
+  if(is.na(fit$est_cor)){
+    name_vector = c(names(fit$par_fix),names(fit$sigmas))
+  }else{
+    name_vector = c(names(fit$par_fix),names(fit$sigmas),names(fit$est_cor))
   }
-  dimnames(confints)[[1]] <- name_vector
+  names(fit$obj$par) = name_vector
+
+  if(typeof(parm) == "character"){
+
+    if(parm[1] == "all"){
+      index = 1:length(name_vector)
+    }else{
+      index = match(parm,name_vector)
+      name_vector <- name_vector[index]
+    }
+
+
+    for(i in 1:length(index)){
+      profile = tmbprofile(fit$obj, name = index[i] , trace = FALSE)
+      c = confint(profile, level = level)
+
+      #If parameter is a variance component
+      if(index[i]>n_parfix){
+        if(name_vector[i]=="Correlation"){
+          confints = rbind(confints,c/sqrt(1. + c))
+        }else{
+          confints = rbind(confints,exp(c))
+        }
+      }else{
+        confints = rbind(confints,c)
+      }
+
+
+    }
+    dimnames(confints)[[1]] <- name_vector
+
+  }else{ #if parm is a matrix with rows containing linear comb.
+
+    if(is.vector(parm)){
+    parm = as.matrix(t(parm))
+    }
+
+    for(i in 1:nrow(parm)){
+
+      index_vec = 1:length(fit$par)
+      index = index_vec[as.logical(parm[i,])]
+
+      profile = tmbprofile(fit$obj, lincomb = parm[i,] , trace = FALSE)
+      c = confint(profile, level = level)
+
+      #If parameter is a variance component
+      if(index[1]>n_parfix){
+        if(name_vector[index[1]]=="Correlation"){
+          confints = rbind(confints,c/sqrt(1. + c))
+        }else{
+          confints = rbind(confints,exp(c))
+        }
+      }else{
+        confints = rbind(confints,c)
+      }
+
+    }
+  }
+
+
   print.default(confints)
 }
 
