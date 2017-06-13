@@ -192,7 +192,9 @@ mumm <- function(formula, data, cor = TRUE, start = c()) {
 
 
   if(length(start)==0){
-    start = rep(0,par_cix[length(par_cix)])
+    start = c(rep(0,ncol(dataTMB$X)+ncol(Xnu)),rep(1,n_rand+n_mult+1),0)
+  }else if(length(start)<sum(par_ix)){
+    start = c(start,0)
   }
 
   TF_beta = as.logical(par_cix[1])
@@ -203,11 +205,12 @@ mumm <- function(formula, data, cor = TRUE, start = c()) {
     a = rep(0,ncol(dataTMB$Z)),
     b  = rep(0,sum(nlevelsr)),
     nu  = start[(par_cix[1]+1):par_cix[2]],
-    log_sigma_a     = start[((par_cix[2]+1)*TF_sigma_a):(par_cix[3]*TF_sigma_a)],
-    log_sigma_b     = start[(par_cix[3]+1):par_cix[4]],
-    log_sigma       = start[length(start)-1],
-    transf_rho      = start[length(start)]
+    log_sigma_a     = log(start[((par_cix[2]+1)*TF_sigma_a):(par_cix[3]*TF_sigma_a)]),
+    log_sigma_b     = log(start[(par_cix[3]+1):par_cix[4]]),
+    log_sigma       = log(start[length(start)-1]),
+    transf_rho      = sign(start[length(start)])*sqrt(start[length(start)]^2/(1-start[length(start)]^2))
   )
+
 
 
   if(cor == TRUE){
@@ -236,7 +239,6 @@ mumm <- function(formula, data, cor = TRUE, start = c()) {
   opt = nlminb(obj$par,obj$fn,obj$gr, control =list(iter.max = 5000, eval.max = 5000));
 
   sdr = sdreport(obj)
-
 
   #---------------------------- Finalizing output ---------------------------------------
 
@@ -281,6 +283,7 @@ mumm <- function(formula, data, cor = TRUE, start = c()) {
              index_num = NUMind1, data = data)
 
   class(res) <- "mumm"
+
   return(res)
 }
 
