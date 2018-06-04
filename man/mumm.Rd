@@ -4,16 +4,19 @@
 \alias{mumm}
 \title{Fit Multiplicative Mixed Models with TMB}
 \usage{
-mumm(formula, data)
+mumm(formula, data, cor = TRUE)
 }
 \arguments{
 \item{formula}{a two-sided formula object describing the linear fixed-effects and random-effects part
 together with the multiplicative part. The respons is on the left of a ~ operator and the terms which are
 separated by + operators are on the right. The random-effect terms are recognized by vertical bars "|",
-separating an expression for a model matrix and a grouping factor. The syntax for the multiplicative terms
+separating an expression for a model matrix and a grouping factor. The syntax for the multiplicative term
 is 'mp("random effect","fixed effect")'.}
 
 \item{data}{a data frame containing the variables in the formula.}
+
+\item{cor}{logical. If FALSE the random effect in the multiplicative term is assumed to be independent of
+the corresponding random main effect.}
 }
 \value{
 An object of class mumm.
@@ -23,8 +26,8 @@ Fit a multiplicative mixed-effects model to data with use of the Template Model 
 }
 \details{
 Fit a multiplicative mixed model via maximum likelihood with use of the Template Model Builder.
-A multiplicative mixed model is here considered as a model with a linear mixed model part and one or more
-multiplicative terms. A multiplicative term is here defined as a product of a random effect and a fixed effect,
+A multiplicative mixed model is here considered as a model with a linear mixed model part and one
+multiplicative term. A multiplicative term is here defined as a product of a random effect and a fixed effect,
 i.e. a term that models a part of the interaction as a random coefficient model based on linear regression
 on the fixed effect.
 }
@@ -51,4 +54,3 @@ fit <- mumm(y ~ 1 + Product + (1|Assessor) + (1|Assessor:Product) +
              mp(Assessor,Product) ,data = sim_data)
 
 }
-

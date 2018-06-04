@@ -53,4 +53,3 @@ fit2 <- mumm(y ~ 1 + Product + (1|Assessor) + mp(Assessor,Product) ,data = sim_d
 lrt(fit,fit2)
 
 }
-

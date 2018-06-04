@@ -4,16 +4,17 @@
 \alias{confint.mumm}
 \title{Confidence Intervals for Model Parameters}
 \usage{
-## S3 method for class mumm
-confint(fit, parm = "all", level = 0.95)
+\method{confint}{mumm}(object, parm = "all", level = 0.95, ...)
 }
 \arguments{
-\item{fit}{an object of class mumm.}
+\item{object}{an object of class mumm.}
 
 \item{parm}{a vector of names specifying which parameters to compute confidence intervals for. If missing,
 confidence intervals will be computed for all of the fixed effect paramters and all of the variance components.}
 
 \item{level}{the confidence level.}
+
+\item{...}{Currently not used.}
 }
 \value{
 A matrix with the first column showing the lower confidence limit and the second column showing the
@@ -53,9 +54,8 @@ sim_data <- data.frame(y, Assessor, Product)
 
 fit <- mumm(y ~ 1 + Product + (1|Assessor) + (1|Assessor:Product) +
              mp(Assessor,Product) ,data = sim_data)
-
-confint(fit)
-confint(fit, parm = c('Product3', 'Assessor', 'mp Assessor:Product'), level = 0.90)
-
+\dontrun{
+confint(fit, parm = c('Product3', 'mp Assessor:Product'), level = 0.90)
 }
 
+}

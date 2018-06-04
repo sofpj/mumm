@@ -1,29 +1,29 @@
 #' @export
-print.mumm <- function(fit) {
+print.mumm <- function(x, ...) {
 
   cat("Multiplicative mixel model fit by ML \n Formula:")
 
-  for(i in 1:length(deparse(fit$call$formula))) {
+  for(i in 1:length(deparse(x$call$formula))) {
     if(i>1){cat("      ")}
-    cat(deparse(fit$call$formula)[i],"\n")
+    cat(deparse(x$call$formula)[i],"\n")
   }
 
 
-  cat("Data:", fit$call$data, "\n")
+  cat("Data:", x$call$data, "\n")
 
-  cat("Log-likelihood at convergence:", -fit$objective, "\n")
+  cat("Log-likelihood at convergence:", -x$objective, "\n")
 
   cat("Random effects: \n")
   #table with variance components
-  table_sd = data.frame(Groups = names(fit$sigmas), Std.Dev. = fit$sigmas)
+  table_sd = data.frame(Groups = names(x$sigmas), Std.Dev. = x$sigmas)
   print(table_sd, right = FALSE, row.names = FALSE)
 
-  cat("Correlation:", fit$est_cor, "\n")
+  cat("Correlation:", x$est_cor, "\n")
 
-  cat("Number of obs:", fit$nobs, "\n")
+  cat("Number of obs:", x$nobs, "\n")
 
   cat("Fixed Effects: \n")
-  print.default(fit$par_fix)
+  print.default(x$par_fix)
 
 }
 
@@ -94,15 +94,15 @@ ranef.mumm <- function(fit) {
 #' Computes confidence intervals for the fixed effect parameters and the variance components
 #' in a fitted multiplicative mixed model.
 #'
-#' @usage ## S3 method for class mumm
-#' confint(fit, parm = "all", level = 0.95)
 #'
-#' @param fit an object of class mumm.
+#' @param object an object of class mumm.
 #'
 #' @param parm a vector of names specifying which parameters to compute confidence intervals for. If missing,
 #' confidence intervals will be computed for all of the fixed effect paramters and all of the variance components.
 #'
 #' @param level the confidence level.
+#'
+#' @param ... Currently not used.
 #'
 #' @details The confidence intervals are computed by the profile likelihood method.
 #'
@@ -136,22 +136,22 @@ ranef.mumm <- function(fit) {
 #'
 #' fit <- mumm(y ~ 1 + Product + (1|Assessor) + (1|Assessor:Product) +
 #'              mp(Assessor,Product) ,data = sim_data)
-#'
-#' confint(fit)
-#' confint(fit, parm = c('Product3', 'Assessor', 'mp Assessor:Product'), level = 0.90)
+#' \dontrun{
+#' confint(fit, parm = c('Product3', 'mp Assessor:Product'), level = 0.90)
+#' }
 #'
 #' @export
-confint.mumm <- function(fit, parm = "all", level = 0.95){
+confint.mumm <- function(object, parm = "all", level = 0.95, ...){
 
   confints = c()
-  n_parfix = length(fit$par_fix)
+  n_parfix = length(object$par_fix)
 
-  if(is.na(fit$est_cor)){
-    name_vector = c(names(fit$par_fix),names(fit$sigmas))
+  if(is.na(object$est_cor)){
+    name_vector = c(names(object$par_fix),names(object$sigmas))
   }else{
-    name_vector = c(names(fit$par_fix),names(fit$sigmas),names(fit$est_cor))
+    name_vector = c(names(object$par_fix),names(object$sigmas),names(object$est_cor))
   }
-  names(fit$obj$par) = name_vector
+  names(object$obj$par) = name_vector
 
   if(typeof(parm) == "character"){
 
@@ -164,8 +164,8 @@ confint.mumm <- function(fit, parm = "all", level = 0.95){
 
 
     for(i in 1:length(index)){
-      profile = tmbprofile(fit$obj, name = index[i] , trace = FALSE)
-      c = confint(profile, level = level)
+      profile = tmbprofile(object$obj, name = index[i] , trace = FALSE)
+      c = stats::confint(profile, level = level)
 
       #If parameter is a variance component
       if(index[i]>n_parfix){
@@ -190,11 +190,11 @@ confint.mumm <- function(fit, parm = "all", level = 0.95){
 
     for(i in 1:nrow(parm)){
 
-      index_vec = 1:length(fit$par)
+      index_vec = 1:length(object$par)
       index = index_vec[as.logical(parm[i,])]
 
-      profile = tmbprofile(fit$obj, lincomb = parm[i,] , trace = FALSE)
-      c = confint(profile, level = level)
+      profile = tmbprofile(object$obj, lincomb = parm[i,] , trace = FALSE)
+      c = stats::confint(profile, level = level)
 
       #If parameter is a variance component
       if(index[1]>n_parfix){
@@ -285,7 +285,7 @@ lrt.mumm <- function(fit1, fit2) {
       cat(deparse(fit2$call$formula)[i],"\n")
     }
   } else {
-    loglikelihood = logLik(fit2, REML = F)
+    loglikelihood = stats::logLik(fit2, REML = F)
     loglik2 = loglikelihood[1]
     df2 = attr(loglikelihood,"df")
 
@@ -311,7 +311,7 @@ lrt.mumm <- function(fit1, fit2) {
   df1 = fit1$df
   df = df1-df2
   chi = 2*(loglik1-loglik2)
-  pvalue = 1-pchisq(chi,df  = df)
+  pvalue = 1-stats::pchisq(chi,df  = df)
   table_sd = data.frame(Df = c(df1,df2), logLik = c(loglik1,loglik2), Chisq = c(NA,chi),
                         ChiDf = c(NA,df), pvalue = c(NA,pvalue))
   row.names(table_sd) <- c("Object","..1")

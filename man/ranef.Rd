@@ -47,4 +47,3 @@ fit <- mumm(y ~ 1 + Product + (1|Assessor) + (1|Assessor:Product) +
 
 ranef(fit)
 }
-

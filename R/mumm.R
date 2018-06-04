@@ -5,14 +5,17 @@
 #' @param formula a two-sided formula object describing the linear fixed-effects and random-effects part
 #' together with the multiplicative part. The respons is on the left of a ~ operator and the terms which are
 #' separated by + operators are on the right. The random-effect terms are recognized by vertical bars "|",
-#' separating an expression for a model matrix and a grouping factor. The syntax for the multiplicative terms
+#' separating an expression for a model matrix and a grouping factor. The syntax for the multiplicative term
 #' is 'mp("random effect","fixed effect")'.
 #'
 #' @param data a data frame containing the variables in the formula.
 #'
+#' @param cor logical. If FALSE the random effect in the multiplicative term is assumed to be independent of
+#' the corresponding random main effect.
+#'
 #' @details Fit a multiplicative mixed model via maximum likelihood with use of the Template Model Builder.
-#' A multiplicative mixed model is here considered as a model with a linear mixed model part and one or more
-#' multiplicative terms. A multiplicative term is here defined as a product of a random effect and a fixed effect,
+#' A multiplicative mixed model is here considered as a model with a linear mixed model part and one
+#' multiplicative term. A multiplicative term is here defined as a product of a random effect and a fixed effect,
 #' i.e. a term that models a part of the interaction as a random coefficient model based on linear regression
 #' on the fixed effect.
 #'
@@ -52,6 +55,7 @@
 #' @importFrom TMB MakeADFun sdreport tmbprofile
 #' @importFrom Rcpp sourceCpp
 #' @importFrom Matrix t
+#' @importFrom methods as
 #' @export
 mumm <- function(formula, data, cor = TRUE) {
 
@@ -62,7 +66,7 @@ mumm <- function(formula, data, cor = TRUE) {
 
   fixedform <- formula   #formula_obj
   fixedform[[3]]<-nobars(fixedform[[3]])
-  terms_fix_mult = attr(terms(fixedform),"term.labels")
+  terms_fix_mult = attr(stats::terms(fixedform),"term.labels")
 
   #Seperating the fixed effect terms and the multiplicative terms
   TFind = rep(FALSE,length(terms_fix_mult))
@@ -74,9 +78,8 @@ mumm <- function(formula, data, cor = TRUE) {
   NUMind1 = NUMind[TFind]  #index for mp terms
   NUMind2 = NUMind[!TFind] #index for fixed terms
 
-  terms_fix = drop.terms(terms(fixedform),NUMind1,keep.response = TRUE)
-  #formula_fix = formula(terms_fix)
-  terms_mult = drop.terms(terms(fixedform),NUMind2,keep.response = TRUE)
+  terms_fix = stats::drop.terms(stats::terms(fixedform),NUMind1,keep.response = TRUE)
+  terms_mult = stats::drop.terms(stats::terms(fixedform),NUMind2,keep.response = TRUE)
   formula_mult = formula(terms_mult)
 
   #The number of multiplicative terms in the model
@@ -114,7 +117,7 @@ mumm <- function(formula, data, cor = TRUE) {
 
   #------------Building fixed effect design matrices, X and Xnu -------------------
 
-  Xbig = model.matrix(terms_fix,data = data)
+  Xbig = stats::model.matrix(terms_fix,data = data)
 
   Xindex = as.logical(attr(Xbig,"assign")%in%NUMremove2 + (attr(Xbig,"assign")==0))
   X = Xbig[,Xindex, drop= F]
@@ -164,16 +167,12 @@ mumm <- function(formula, data, cor = TRUE) {
 
   colnames(data_named)[colnames(data)==formula[[2]]] <- "y"
 
-  attach(data_named)
-
-  #Want to include mp interactions in data_named
+  #If the fixed effect in the mp term is an interaction, add it to data_named
   for(i in 1:length(fixedef)){
     if(regexpr(":",fixedef[i]) != -1){
-      data_named[fixedef[i]] = eval(parse(text=fixedef[i]))
+      data_named[fixedef[i]] = with(data = data_named,eval(parse(text=fixedef[i])))
     }
   }
-
-  detach(data_named)
 
   nlevelsf = sapply(data_named[fixedef],nlevels);
   nlevelsr = sapply(data_named[randomef],nlevels);
@@ -223,7 +222,7 @@ mumm <- function(formula, data, cor = TRUE) {
 
 
 
-  opt = nlminb(obj$par,obj$fn,obj$gr, control =list(iter.max = 5000, eval.max = 5000));
+  opt = stats::nlminb(obj$par,obj$fn,obj$gr, control =list(iter.max = 5000, eval.max = 5000));
 
   sdr = sdreport(obj)
 
