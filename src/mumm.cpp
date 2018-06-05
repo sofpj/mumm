@@ -70,6 +70,7 @@ Type objective_function<Type>::operator() ()
     nuj[i] = 0;
   }
 
+
   /*Build nu for the j'th multiplicative term*/
   for (int l = start; l<nlevelsf[0]; l++) {
     indx = l-start+jumpf;
@@ -95,7 +96,7 @@ Type objective_function<Type>::operator() ()
   jumpr += nlevelsr[0];
 
 
-  /* The rest of the multiplicative terms */
+  /* The rest of the multiplicative terms - Not in use yet! */
 
   for (int j = 1; j<nlevelsf.size(); j++){
     vector<Type> nuj(nlevelsf[j]);

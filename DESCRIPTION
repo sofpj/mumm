@@ -1,8 +1,7 @@
 Package: mumm
 Type: Package
 Title: Multiplicative Mixed Models using Template Model Builder
-Version: 0.1
-Date: 2016-03-02
+Version: 0.2.0
 Authors@R: c(
   person("Sofie","Poedenphant", email = "sofp@dtu.dk", role = c("aut","cre")),
   person("Per Bruun", "Brockhoff", role = "aut"))

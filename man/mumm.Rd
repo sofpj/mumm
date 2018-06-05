@@ -31,7 +31,7 @@ Fit a multiplicative mixed model via maximum likelihood with use of the Template
 A multiplicative mixed model is here considered as a model with a linear mixed model part and one
 multiplicative term. A multiplicative term is here defined as a product of a random effect and a fixed effect,
 i.e. a term that models a part of the interaction as a random coefficient model based on linear regression
-on the fixed effect.
+on a fixed main effect.
 }
 \examples{
 set.seed(100)
