@@ -13,6 +13,8 @@
 #' @param cor logical. If FALSE the random effect in the multiplicative term is assumed to be independent of
 #' the corresponding random main effect.
 #'
+#' @param start a numeric vector of starting values for the parameters in the model.
+#'
 #' @details Fit a multiplicative mixed model via maximum likelihood with use of the Template Model Builder.
 #' A multiplicative mixed model is here considered as a model with a linear mixed model part and one
 #' multiplicative term. A multiplicative term is here defined as a product of a random effect and a fixed effect,
@@ -57,7 +59,7 @@
 #' @importFrom Matrix t
 #' @importFrom methods as
 #' @export
-mumm <- function(formula, data, cor = TRUE) {
+mumm <- function(formula, data, cor = TRUE, start = c()) {
 
   #Checiking input:
 
@@ -187,15 +189,28 @@ mumm <- function(formula, data, cor = TRUE) {
                  indexIna = indexIna, indexInSiga = NUMindex)
 
 
+  par_ix = c(ncol(dataTMB$X),ncol(Xnu),n_rand,n_mult,1,1)
+  par_cix = cumsum(par_ix)
+
+
+  if(length(start)==0){
+    start = c(rep(0,ncol(dataTMB$X)+ncol(Xnu)),rep(1,n_rand+n_mult+1),0)
+  }else if(length(start)<sum(par_ix)){
+    start = c(start,0)
+  }
+
+  TF_beta = as.logical(par_cix[1])
+  TF_sigma_a = (par_cix[2]+1)<=par_cix[3]
+
   parameters = list(
-    beta  = rep(0,ncol(dataTMB$X)),
+    beta  =  start[(0+as.logical(par_cix[1])):par_cix[1]],
     a = rep(0,ncol(dataTMB$Z)),
     b  = rep(0,sum(nlevelsr)),
-    nu  = rep(0,ncol(Xnu)),
-    log_sigma_a     = rep(1,n_rand),
-    log_sigma_b     = rep(0,n_mult),
-    log_sigma       = 0,
-    transf_rho      = 0
+    nu  = start[(par_cix[1]+1):par_cix[2]],
+    log_sigma_a     = log(start[((par_cix[2]+1)*TF_sigma_a):(par_cix[3]*TF_sigma_a)]),
+    log_sigma_b     = log(start[(par_cix[3]+1):par_cix[4]]),
+    log_sigma       = log(start[length(start)-1]),
+    transf_rho      = sign(start[length(start)])*sqrt(start[length(start)]^2/(1-start[length(start)]^2))
   )
 
 

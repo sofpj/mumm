@@ -4,7 +4,7 @@
 \alias{mumm}
 \title{Fit Multiplicative Mixed Models with TMB}
 \usage{
-mumm(formula, data, cor = TRUE)
+mumm(formula, data, cor = TRUE, start = c())
 }
 \arguments{
 \item{formula}{a two-sided formula object describing the linear fixed-effects and random-effects part
@@ -17,6 +17,8 @@ is 'mp("random effect","fixed effect")'.}
 
 \item{cor}{logical. If FALSE the random effect in the multiplicative term is assumed to be independent of
 the corresponding random main effect.}
+
+\item{start}{a numeric vector of starting values for the parameters in the model.}
 }
 \value{
 An object of class mumm.
