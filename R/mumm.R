@@ -3,7 +3,7 @@
 #' Fit a multiplicative mixed-effects model to data with use of the Template Model Builder.
 #'
 #' @param formula a two-sided formula object describing the linear fixed-effects and random-effects part
-#' together with the multiplicative part. The respons is on the left of a ~ operator and the terms which are
+#' together with the multiplicative part. The response is on the left of a ~ operator and the terms which are
 #' separated by + operators are on the right. The random-effect terms are recognized by vertical bars "|",
 #' separating an expression for a model matrix and a grouping factor. The syntax for the multiplicative term
 #' is 'mp("random effect","fixed effect")'.

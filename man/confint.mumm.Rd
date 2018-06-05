@@ -10,7 +10,7 @@
 \item{object}{an object of class mumm.}
 
 \item{parm}{a vector of names specifying which parameters to compute confidence intervals for. If missing,
-confidence intervals will be computed for all of the fixed effect paramters and all of the variance components.}
+confidence intervals will be computed for all of the fixed effect parameters and all of the variance components.}
 
 \item{level}{the confidence level.}
 
