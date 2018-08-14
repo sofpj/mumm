@@ -4,7 +4,7 @@
 \alias{mumm}
 \title{Fit Multiplicative Mixed Models with TMB}
 \usage{
-mumm(formula, data, cor = TRUE, start = c())
+mumm(formula, data, cor = TRUE, start = c(), control = list())
 }
 \arguments{
 \item{formula}{a two-sided formula object describing the linear fixed-effects and random-effects part
@@ -19,9 +19,11 @@ is 'mp("random effect","fixed effect")'.}
 the corresponding random main effect.}
 
 \item{start}{a numeric vector of starting values for the parameters in the model.}
+
+\item{control}{a list of control parameters passed on to the \code{nlminb} function used for the optimization.}
 }
 \value{
-An object of class mumm.
+An object of class \code{mumm}.
 }
 \description{
 Fit a multiplicative mixed-effects model to data with use of the Template Model Builder.

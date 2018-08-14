@@ -15,13 +15,15 @@
 #'
 #' @param start a numeric vector of starting values for the parameters in the model.
 #'
+#' @param control a list of control parameters passed on to the \code{nlminb} function used for the optimization.
+#'
 #' @details Fit a multiplicative mixed model via maximum likelihood with use of the Template Model Builder.
 #' A multiplicative mixed model is here considered as a model with a linear mixed model part and one
 #' multiplicative term. A multiplicative term is here defined as a product of a random effect and a fixed effect,
 #' i.e. a term that models a part of the interaction as a random coefficient model based on linear regression
 #' on a fixed main effect.
 #'
-#' @return An object of class mumm.
+#' @return An object of class \code{mumm}.
 #'
 #' @examples
 #' set.seed(100)
@@ -59,7 +61,7 @@
 #' @importFrom Matrix t
 #' @importFrom methods as
 #' @export
-mumm <- function(formula, data, cor = TRUE, start = c()) {
+mumm <- function(formula, data, cor = TRUE, start = c(), control = list()) {
 
   #Checiking input:
 
@@ -237,7 +239,7 @@ mumm <- function(formula, data, cor = TRUE, start = c()) {
 
 
 
-  opt = stats::nlminb(obj$par,obj$fn,obj$gr, control =list(iter.max = 5000, eval.max = 5000));
+  opt = stats::nlminb(obj$par,obj$fn,obj$gr, control = control);
 
   sdr = sdreport(obj)
 

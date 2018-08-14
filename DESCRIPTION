@@ -1,22 +1,26 @@
 Package: mumm
 Type: Package
-Title: Multiplicative Mixed Models using Template Model Builder
-Version: 0.2.0
+Title: Multiplicative Mixed Models using the Template Model Builder
+Version: 0.2.1
+Date: 2018-08-14
 Authors@R: c(
   person("Sofie","Poedenphant", email = "sofp@dtu.dk", role = c("aut","cre")),
   person("Per Bruun", "Brockhoff", role = "aut"))
 Maintainer: Sofie Poedenphant <sofp@dtu.dk>
 Description: Fit multiplicative mixed models using maximum likelihood estimation via the Template
-  Model Builder (TMB). The package provides functions for calculating confidence intervals for the
-  model parameters and for performing likelihood ratio tests.
+  Model Builder (TMB), Kristensen K, Nielsen A, Berg CW, Skaug H, Bell BM (2016) <doi:10.18637/jss.v070.i05>.
+  One version of the multiplicative mixed model is applied in Piepho (1999) <doi:10.1111/j.0006-341X.1999.01120.x>.
+  The package provides functions for calculating confidence intervals for the model parameters
+  and for performing likelihood ratio tests.
 License: GPL (>= 2)
 Imports:
     TMB,
     Rcpp,
-    lme4,
     Matrix,
     stringr,
     methods
+Depends:
+    lme4
 LinkingTo: TMB, RcppEigen, Rcpp
 LazyData: TRUE
 RoxygenNote: 6.0.1
@@ -24,3 +28,4 @@ URL: http://github.com/sofpj/mumm
 BugReports: http://github.com/sofpj/mumm/issues
 Encoding: UTF-8
 Suggests: knitr
+Repository: CRAN
