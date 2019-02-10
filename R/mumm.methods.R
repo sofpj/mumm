@@ -84,7 +84,7 @@ ranef.mumm <- function(object, ...) {
     index = index + nlevels_par[[i]]
   }
 
-  print.default(par_rand_list)
+  par_rand_list
 
 }
 
